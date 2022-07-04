@@ -3,18 +3,20 @@ import { writeFile } from 'fs/promises';
 
 /**
  * Write manifest.json
+ * @param {import('esbuild').BuildOptions} options Build options.
  * @param {import('esbuild').BuildResult} result The build result.
- * @param {string} outputFile The output file or dir.
- * @param {string} publicPath The public path.
+ * @param {string} jsonPath The output file name.
  */
-export async function writeManifestJson(result, outputFile, publicPath = '/') {
+export async function writeManifestJson(options, result, jsonPath) {
     const { metafile } = result;
     if (!metafile) {
         return;
     }
 
-    const outputDir = path.extname(outputFile) ? path.dirname(outputFile) : outputFile;
-    outputFile = path.extname(outputFile) ? outputFile : path.join(outputDir, 'entrypoints.json');
+    const workingDir = options.absWorkingDir || process.cwd();
+    const publicPath = options.publicPath || '/';
+    const outputDir = options.outdir ? options.outdir : options.outfile ? path.dirname(options.outfile) : workingDir;
+    const outputFile = path.join(outputDir, jsonPath);
 
     const { outputs } = metafile;
     const manifestJson = Object.entries(outputs)

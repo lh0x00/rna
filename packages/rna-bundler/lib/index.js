@@ -3,17 +3,14 @@ import path from 'path';
 import { createLogger, readableSize } from '@chialab/rna-logger';
 import { getEntryBuildConfig, mergeConfig, readConfigFile, locateConfigFile } from '@chialab/rna-config-loader';
 import { assignToResult, createResult, remapResult } from '@chialab/esbuild-rna';
+import { writeMetafile } from '@chialab/esbuild-plugin-manifest';
 import { build } from './build.js';
-import { writeManifestJson } from './writeManifestJson.js';
-import { writeEntrypointsJson, writeDevEntrypointsJson } from './writeEntrypointsJson.js';
 import { Queue } from './Queue.js';
-import { writeMetafile } from './writeMetafile.js';
 import { bundleSize } from './bundleSize.js';
 
 export * from './loaders.js';
 export { transform } from './transform.js';
 export { build } from './build.js';
-export { writeManifestJson, writeEntrypointsJson, writeDevEntrypointsJson };
 
 /**
  * @typedef {import('./transform').TransformResult} TransformResult
@@ -218,7 +215,7 @@ export function command(program) {
                     const metafile = buildResult.metafile;
 
                     if (typeof metafilePath === 'string') {
-                        await writeMetafile(metafile, path.resolve(cwd, metafilePath));
+                        await writeMetafile(config, { metafile }, metafilePath);
                     }
 
                     if (Object.keys(metafile.outputs).length) {

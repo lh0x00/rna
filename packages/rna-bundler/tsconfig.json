@@ -38,6 +38,9 @@
       "path": "../esbuild-plugin-jsx-import"
     },
     {
+      "path": "../esbuild-plugin-manifest"
+    },
+    {
       "path": "../esbuild-plugin-meta-url"
     },
     {

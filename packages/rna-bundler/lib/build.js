@@ -4,34 +4,6 @@ import esbuild from 'esbuild';
 import { createLogger } from '@chialab/rna-logger';
 import { hasPlugin } from '@chialab/esbuild-rna';
 import { loaders } from './loaders.js';
-import { writeManifestJson } from './writeManifestJson.js';
-import { writeEntrypointsJson } from './writeEntrypointsJson.js';
-
-/**
- * @typedef {import('esbuild').Metafile} Metafile
- */
-
-/**
- * @param {import('@chialab/rna-config-loader').EntrypointFinalBuildConfig} config
- * @param {{ stdin?: import('esbuild').StdinOptions; entryPoints?: string[] }} entryOptions
- * @param {import('@chialab/esbuild-rna').Result} result
- */
-async function onBuildEnd(config, entryOptions, result) {
-    const {
-        root,
-        publicPath,
-        format,
-        manifestPath,
-        entrypointsPath,
-    } = config;
-
-    if (manifestPath && result) {
-        await writeManifestJson(result, manifestPath, publicPath);
-    }
-    if (entrypointsPath && entryOptions.entryPoints && result) {
-        await writeEntrypointsJson(entryOptions.entryPoints, result, root, entrypointsPath, publicPath, format);
-    }
-}
 
 /**
  * Build and bundle sources.
@@ -92,44 +64,41 @@ export async function build(config) {
 
     const finalPlugins = /** @type {import('esbuild').Plugin[]} */ (await Promise.all([
         !hasPlugin(plugins, 'alias') &&
-            import('@chialab/esbuild-plugin-alias')
-                .then(({ default: plugin }) => plugin(alias)),
+            import('@chialab/esbuild-plugin-alias').then(({ default: plugin }) => plugin(alias)),
         !hasPlugin(plugins, 'any-file') &&
-            import('@chialab/esbuild-plugin-any-file')
-                .then(({ default: plugin }) => plugin()),
+            import('@chialab/esbuild-plugin-any-file').then(({ default: plugin }) => plugin()),
         !hasPlugin(plugins, 'env') &&
-            import('@chialab/esbuild-plugin-env')
-                .then(({ default: plugin }) => plugin()),
+            import('@chialab/esbuild-plugin-env').then(({ default: plugin }) => plugin()),
         !hasPlugin(plugins, 'define-this') &&
-            import('@chialab/esbuild-plugin-define-this')
-                .then(({ default: plugin }) => plugin()),
+            import('@chialab/esbuild-plugin-define-this').then(({ default: plugin }) => plugin()),
         !hasPlugin(plugins, 'jsx-import') &&
-            import('@chialab/esbuild-plugin-jsx-import')
-                .then(({ default: plugin }) => plugin({ jsxModule, jsxExport })),
+            import('@chialab/esbuild-plugin-jsx-import').then(({ default: plugin }) => plugin({
+                jsxModule,
+                jsxExport,
+            })),
         !hasPlugin(plugins, 'external') &&
-            import('@chialab/esbuild-plugin-external')
-                .then(({ default: plugin }) => plugin({
-                    dependencies: !bundle,
-                    peerDependencies: !bundle,
-                    optionalDependencies: !bundle,
-                })),
+            import('@chialab/esbuild-plugin-external').then(({ default: plugin }) => plugin({
+                dependencies: !bundle,
+                peerDependencies: !bundle,
+                optionalDependencies: !bundle,
+            })),
         !hasPlugin(plugins, 'css-import') &&
-            import('@chialab/esbuild-plugin-css-import')
-                .then(({ default: plugin }) => plugin()),
+            import('@chialab/esbuild-plugin-css-import').then(({ default: plugin }) => plugin()),
         !hasPlugin(plugins, 'unwebpack') &&
-            import('@chialab/esbuild-plugin-unwebpack')
-                .then(({ default: plugin }) => plugin()),
+            import('@chialab/esbuild-plugin-unwebpack').then(({ default: plugin }) => plugin()),
         !hasPlugin(plugins, 'commonjs') && !bundle &&
-            import('@chialab/esbuild-plugin-commonjs')
-                .then(({ default: plugin }) => plugin({
-                    helperModule: true,
-                })),
+            import('@chialab/esbuild-plugin-commonjs').then(({ default: plugin }) => plugin({
+                helperModule: true,
+            })),
         !hasPlugin(plugins, 'worker') &&
-            import('@chialab/esbuild-plugin-worker')
-                .then(({ default: plugin }) => plugin()),
+            import('@chialab/esbuild-plugin-worker').then(({ default: plugin }) => plugin()),
         !hasPlugin(plugins, 'meta-url') &&
-            import('@chialab/esbuild-plugin-meta-url')
-                .then(({ default: plugin }) => plugin()),
+            import('@chialab/esbuild-plugin-meta-url').then(({ default: plugin }) => plugin()),
+        !hasPlugin(plugins, 'manifest') &&
+        import('@chialab/esbuild-plugin-manifest').then(({ default: plugin }) => plugin({
+            manifestPath: 'manifest.json',
+            entrypointsPath: 'entrypoints.json',
+        })),
         ...plugins,
     ].filter(Boolean)));
 
@@ -170,9 +139,6 @@ export async function build(config) {
         absWorkingDir: rootDir,
         watch: watch && {
             onRebuild(error, result) {
-                if (result) {
-                    onBuildEnd(config, entryOptions, /** @type {import('@chialab/esbuild-rna').Result} */ (result));
-                }
                 if (typeof watch === 'object' &&
                     typeof watch.onRebuild === 'function') {
                     return watch.onRebuild(error, result);
@@ -184,8 +150,6 @@ export async function build(config) {
         write,
         allowOverwrite: !write,
     }));
-
-    await onBuildEnd(config, entryOptions, result);
 
     return {
         ...result,

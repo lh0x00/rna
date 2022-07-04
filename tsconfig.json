@@ -55,6 +55,9 @@
       "path": "./packages/esbuild-plugin-jsx-import"
     },
     {
+      "path": "./packages/esbuild-plugin-manifest"
+    },
+    {
       "path": "./packages/esbuild-plugin-meta-url"
     },
     {
